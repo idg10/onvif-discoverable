@@ -27,7 +27,10 @@ Items are marked as `[x]` (implemented), `[ ]` (not yet implemented), or `[?]` (
 - [x] `wsa:Action` = `http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches`
 - [x] `wsa:MessageID` — fresh `uuid:` URI per response
 - [x] `wsa:RelatesTo` — echoes the incoming `wsa:MessageID`
-- [x] `wsa:To` = `urn:schemas-xmlsoap-org:ws:2005:04:discovery`
+- [x] `wsa:To` = `http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous`  
+  *Was incorrectly set to `urn:schemas-xmlsoap-org:ws:2005:04:discovery` (the discovery endpoint URI from the incoming Probe request). Fixed.*
+- [ ] `d:AppSequence` header element with `InstanceId` and `MessageNumber` attributes  
+  *Present in all real camera captures (e.g. `<d:AppSequence InstanceId="1637072188" MessageNumber="17"/>`). Required by the WS-Discovery spec to allow clients to detect missed or out-of-order messages. We currently omit this entirely.*
 
 ---
 
@@ -44,7 +47,7 @@ Items are marked as `[x]` (implemented), `[ ]` (not yet implemented), or `[?]` (
 - [x] Includes `dn:NetworkVideoTransmitter` (`http://www.onvif.org/ver10/network/wsdl`)  
   *Profile S §9.2: required for backward compatibility*
 - [ ] Includes `tds:Device` (`http://www.onvif.org/ver10/device/wsdl`)  
-  *Core §7.3.2.1: the primary ONVIF device management type. Profile S §9.2 says a device "may omit" it (i.e. it is optional for Profile S alone), but Windows may require it.*
+  *Core §7.3.2.1: the primary ONVIF device management type. Profile S §9.2 says a device "may omit" it, but every real camera capture found includes it alongside `dn:NetworkVideoTransmitter`. Hikvision sends `dn:NetworkVideoTransmitter tds:Device`.*
 
 ---
 
@@ -102,9 +105,27 @@ Scope matching uses RFC 3986 path-prefix matching: `onvif://www.onvif.org/hardwa
 
 ---
 
+## 10. Post-discovery streaming (not WS-Discovery, but required for the overall goal)
+
+These items affect what happens *after* Windows has discovered the device. They have no bearing on the ProbeMatch response, but are required before Windows can actually stream video.
+
+> **Important:** Windows supports only **MJPEG and H.264** codecs (RTP over UDP). MPEG4 is not supported.  
+> Source: [Microsoft: Network Cameras](https://learn.microsoft.com/en-us/windows-hardware/drivers/stream/network-cameras).  
+> Profile S §8.2 (H.264) is the relevant section for Windows compatibility.
+
+- [ ] Device must implement the ONVIF **media service** at the URL advertised in `d:XAddrs`, responding to SOAP calls including `GetVideoEncoderConfigurationOptions`, `GetProfiles`, `GetStreamUri`, etc.
+- [ ] `GetVideoEncoderConfigurationOptions` response must declare H.264 support (Profile S §8.2)
+- [ ] Device must be able to stream H.264 video over RTP/UDP (Profile S §8.2)
+- [ ] Device must send a key frame on demand when `SetSynchronizationPoint` is called (Profile S §8.2)
+
+---
+
 ## Summary of likely causes of Windows non-discovery
 
 Based on the above and experimental observation (Windows 11 probes for `dn:NetworkVideoTransmitter` only):
 
 1. ~~**Missing mandatory `name` and `hardware` scopes.**~~ Now implemented. (Item 5a)
-2. **Windows probes for `tds:Device`, which we currently ignore.** (Item 1 / Item 4) — *not currently observed, revisit once `dn:NetworkVideoTransmitter` works*
+2. **Wrong `wsa:To` in ProbeMatches response.** We send the discovery endpoint URI; real cameras send the anonymous addressing URI. Windows's strict implementation likely rejects responses with the wrong addressing. (Item 2) — **most likely current blocker**
+3. **Missing `d:AppSequence` header.** Every real camera includes this; we omit it entirely. (Item 2)
+4. **Missing `tds:Device` in `d:Types`.** Every real camera includes both types. (Item 4)
+5. **Windows probes for `tds:Device`, which we currently ignore.** (Item 1) — *not currently observed, revisit once above are fixed*
