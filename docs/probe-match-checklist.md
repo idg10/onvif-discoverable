@@ -75,6 +75,8 @@ Scope matching uses RFC 3986 path-prefix matching: `onvif://www.onvif.org/hardwa
 
 ## 6. `d:XAddrs` (Core §7.3.2.3, §7.3.3)
 
+`d:XAddrs` is **not** the RTSP stream URL. It is the URL of the ONVIF **device management service** — an HTTP SOAP endpoint that clients call immediately after discovery (see §10 below). The RTSP URL is not known until a client calls `GetStreamUri` on the media service.
+
 - [x] Contains the device service URL (passed as CLI argument)
 - [ ] URL scheme and IP address should match the interface on which the probe was received  
   *Core §7.3.2.3: "A URI shall be provided for each protocol (http, https) and externally available IP address." If the device is reachable on multiple interfaces or via both HTTP and HTTPS, each should be listed.*
@@ -105,18 +107,34 @@ Scope matching uses RFC 3986 path-prefix matching: `onvif://www.onvif.org/hardwa
 
 ---
 
-## 10. Post-discovery streaming (not WS-Discovery, but required for the overall goal)
+## 10. Post-discovery: ONVIF service calls and streaming
 
-These items affect what happens *after* Windows has discovered the device. They have no bearing on the ProbeMatch response, but are required before Windows can actually stream video.
+These items affect what happens *after* Windows receives a ProbeMatch. They do not affect the WS-Discovery response itself, but all three stages must work before Windows will display or stream video.
 
 > **Important:** Windows supports only **MJPEG and H.264** codecs (RTP over UDP). MPEG4 is not supported.  
 > Source: [Microsoft: Network Cameras](https://learn.microsoft.com/en-us/windows-hardware/drivers/stream/network-cameras).  
 > Profile S §8.2 (H.264) is the relevant section for Windows compatibility.
 
-- [ ] Device must implement the ONVIF **media service** at the URL advertised in `d:XAddrs`, responding to SOAP calls including `GetVideoEncoderConfigurationOptions`, `GetProfiles`, `GetStreamUri`, etc.
-- [ ] `GetVideoEncoderConfigurationOptions` response must declare H.264 support (Profile S §8.2)
-- [ ] Device must be able to stream H.264 video over RTP/UDP (Profile S §8.2)
-- [ ] Device must send a key frame on demand when `SetSynchronizationPoint` is called (Profile S §8.2)
+### Stage 1 — ONVIF device service (HTTP SOAP at the `d:XAddrs` URL)
+
+Windows calls this immediately after receiving a ProbeMatch, before attempting to stream. If nothing is listening at `d:XAddrs`, Windows silently drops the device and the UI shows "no cameras found" even if WS-Discovery worked correctly.
+
+- [ ] HTTP server listening at the URL passed as `d:XAddrs`
+- [ ] Responds to `GetCapabilities` — returns at minimum the media service URL
+- [ ] Responds to `GetDeviceInformation` — returns make/model/firmware metadata
+
+### Stage 2 — ONVIF media service (HTTP SOAP, URL returned by `GetCapabilities`)
+
+- [ ] HTTP server listening at the media service URL
+- [ ] Responds to `GetProfiles` — returns one or more media profile tokens
+- [ ] Responds to `GetVideoEncoderConfigurationOptions` — declares H.264 support (Profile S §8.2)
+- [ ] Responds to `GetStreamUri` with a profile token — returns the RTSP stream URL
+
+### Stage 3 — RTP/RTSP streaming
+
+- [ ] RTSP server listening at the URL returned by `GetStreamUri`
+- [ ] Streams H.264 video over RTP/UDP (Profile S §8.2)
+- [ ] Sends a key frame on demand when `SetSynchronizationPoint` is called (Profile S §8.2)
 
 ---
 
@@ -125,7 +143,7 @@ These items affect what happens *after* Windows has discovered the device. They 
 Based on the above and experimental observation (Windows 11 probes for `dn:NetworkVideoTransmitter` only):
 
 1. ~~**Missing mandatory `name` and `hardware` scopes.**~~ Now implemented. (Item 5a)
-2. **Wrong `wsa:To` in ProbeMatches response.** We send the discovery endpoint URI; real cameras send the anonymous addressing URI. Windows's strict implementation likely rejects responses with the wrong addressing. (Item 2) — **most likely current blocker**
-3. **Missing `d:AppSequence` header.** Every real camera includes this; we omit it entirely. (Item 2)
-4. **Missing `tds:Device` in `d:Types`.** Every real camera includes both types. (Item 4)
-5. **Windows probes for `tds:Device`, which we currently ignore.** (Item 1) — *not currently observed, revisit once above are fixed*
+2. ~~**Wrong `wsa:To` in ProbeMatches response.**~~ Fixed. (Item 2)
+3. ~~**Missing `d:AppSequence` header.**~~ Fixed. (Item 2)
+4. **No HTTP service at `d:XAddrs`.** Windows calls the device management service immediately after receiving a ProbeMatch. If nothing answers, Windows silently discards the device. This is the most likely current blocker — the WS-Discovery response may now be correct, but nothing is listening at the advertised URL. (Item 10, Stage 1)
+5. **Missing `tds:Device` in `d:Types`.** Every real camera includes both types. (Item 4) — *lower priority until Stage 1 is working*
