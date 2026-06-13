@@ -3,6 +3,15 @@ using System.Net.Sockets;
 using System.Text;
 using System.Xml.Linq;
 
+if (args.Length != 1)
+{
+    Console.Error.WriteLine("Usage: OnvifDiscoverable.Server <xaddrs-url>");
+    Console.Error.WriteLine("  e.g. OnvifDiscoverable.Server http://192.168.1.10:8080/onvif/device_service");
+    return 1;
+}
+
+string xAddrsUrl = args[0];
+
 var multicastAddress = IPAddress.Parse("239.255.255.250");
 var port = 3702;
 
@@ -74,7 +83,7 @@ while (true)
             }
             else
             {
-                var response = BuildProbeMatchResponse(messageId);
+                var response = BuildProbeMatchResponse(messageId, xAddrsUrl);
                 var bytes = Encoding.UTF8.GetBytes(response);
 
                 await udp.SendAsync(bytes, bytes.Length, result.RemoteEndPoint);
@@ -83,11 +92,11 @@ while (true)
     }
 }
 
-
+#pragma warning disable CS0162 // unreachable code after while(true)
 // TBD: not sure what this is.
 const string endpointReference = "urn:uuid:314ba71f-a192-4054-9436-e19eb037f074";
 
-string BuildProbeMatchResponse(string incomingMessageId)
+string BuildProbeMatchResponse(string incomingMessageId, string xAddrs)
 {
     string messageId = $"uuid:{Guid.NewGuid()}";
 
@@ -115,9 +124,7 @@ string BuildProbeMatchResponse(string incomingMessageId)
                 <d:Scopes>
                   onvif://www.onvif.org/Profile/Streaming
                 </d:Scopes>
-                <d:XAddrs>
-                  http://YOUR_IP:YOUR_PORT/onvif/device_service
-                </d:XAddrs>
+                <d:XAddrs>{xAddrs}</d:XAddrs>
                 <d:MetadataVersion>1</d:MetadataVersion>
               </d:ProbeMatch>
             </d:ProbeMatches>
