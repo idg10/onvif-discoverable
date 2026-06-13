@@ -7,7 +7,7 @@
 ## Tech Stack
 
 - **.NET 10.0**, C#, single-project console app
-- No external NuGet dependencies (BCL only: `System.Net.Sockets`, `System.Xml.Linq`)
+- No external NuGet dependencies (BCL only: `System.Net.Sockets`, `System.Net.HttpListener`, `System.Xml.Linq`)
 - AOT compilation enabled (`PublishAot: true`)
 - Nullable reference types enabled
 
@@ -30,8 +30,8 @@ onvif-discoverable/
 # Build
 dotnet build src/
 
-# Run (xaddrs-url, name, hardware are advertised in ProbeMatch responses)
-dotnet run --project src/OnvifDiscoverable.Server/ -- http://192.168.1.10:8080/onvif/device_service "My Camera" "Acme Model X"
+# Run (xaddrs-url and rtsp-url are HTTP/RTSP endpoints; name and hardware are advertised in ProbeMatch responses)
+dotnet run --project src/OnvifDiscoverable.Server/ -- http://192.168.1.10:8080/onvif/device_service rtsp://192.168.1.10:8554/stream "My Camera" "Acme Model X"
 
 # Publish as native AOT executable
 dotnet publish -c Release -p:PublishAot=true src/OnvifDiscoverable.Server/
@@ -41,11 +41,13 @@ There are no tests at this time.
 
 ## Key Implementation Notes
 
-**`Program.cs`** — arg parsing, constructs `OnvifDeviceDescription`, starts `WsDiscoveryListener`.
+**`Program.cs`** — arg parsing, constructs `OnvifDeviceDescription`, runs `WsDiscoveryListener` and `OnvifHttpListener` concurrently via `Task.WhenAll`. Ctrl+C is wired to a `CancellationTokenSource` shared by both listeners.
 
-**`OnvifDeviceDescription`** — record holding the device attributes advertised in ProbeMatch responses: `XAddrs`, `EndpointAddress`, `Types`, `Scopes`.
+**`OnvifDeviceDescription`** — record holding the device attributes: `XAddrs` (ONVIF device service URL), `RtspStreamUri` (returned by `GetStreamUri`), `EndpointAddress`, `Name`, `Hardware`, `Types`, `Scopes`.
 
-**`WsDiscoveryListener`** — joins the WS-Discovery multicast group, receives UDP datagrams, validates Probe requests, and sends ProbeMatch responses. Accepts a `CancellationToken`; Ctrl+C is wired up in `Program.cs`.
+**`WsDiscoveryListener`** — joins the WS-Discovery multicast group, receives UDP datagrams, validates Probe requests, and sends ProbeMatch responses.
+
+**`OnvifHttpListener`** — HTTP SOAP server. Listens on the host/port from `XAddrs`, dispatches on `wsa:Action`, and handles: `GetSystemDateAndTime`, `GetCapabilities`, `GetDeviceInformation` (device service) and `GetProfiles`, `GetVideoEncoderConfigurationOptions`, `GetStreamUri` (media service). The media service URL is derived from `XAddrs` by replacing the last path segment with `media_service`.
 
 **Known TODOs in the code:**
 - The endpoint UUID (`urn:uuid:314ba71f-...`) has a `// TBD` comment — its intended source/meaning is not yet decided
@@ -54,12 +56,15 @@ There are no tests at this time.
 
 The code uses these XML namespaces — keep them consistent:
 
-| Prefix | URI |
-|--------|-----|
-| `s12` | `http://www.w3.org/2003/05/soap-envelope` |
-| `wsa` | `http://schemas.xmlsoap.org/ws/2004/08/addressing` |
-| `wsd` | `http://schemas.xmlsoap.org/ws/2005/04/discovery` |
-| `dn` | `http://www.onvif.org/ver10/network/wsdl` |
+| Prefix | URI | Used in |
+|--------|-----|---------|
+| `env` / `s12` | `http://www.w3.org/2003/05/soap-envelope` | all |
+| `wsa` | `http://schemas.xmlsoap.org/ws/2004/08/addressing` | all |
+| `wsd` / `d` | `http://schemas.xmlsoap.org/ws/2005/04/discovery` | WS-Discovery |
+| `dn` | `http://www.onvif.org/ver10/network/wsdl` | WS-Discovery Types |
+| `tds` | `http://www.onvif.org/ver10/device/wsdl` | device service |
+| `trt` | `http://www.onvif.org/ver10/media/wsdl` | media service |
+| `tt` | `http://www.onvif.org/ver10/schema` | ONVIF common schema |
 
 ## Conventions
 
