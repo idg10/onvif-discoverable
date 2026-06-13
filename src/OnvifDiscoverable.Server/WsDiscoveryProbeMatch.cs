@@ -57,8 +57,17 @@ internal class WsDiscoveryProbeMatch
     /// The <c>wsa:MessageID</c> from the incoming Probe request, used to populate
     /// <c>wsa:RelatesTo</c> in the response header.
     /// </param>
+    /// <param name="instanceId">
+    /// Identifies the current run of the device. Conventionally the Unix timestamp at
+    /// which the process started. Changes each time the device restarts, allowing clients
+    /// to detect that prior state is invalid.
+    /// </param>
+    /// <param name="messageNumber">
+    /// A counter incremented once per WS-Discovery message sent during this instance.
+    /// Allows clients to detect lost or reordered messages. Must be at least 1.
+    /// </param>
     /// <returns>A UTF-8 XML string containing the ProbeMatches SOAP envelope.</returns>
-    public string ToXml(string relatesTo)
+    public string ToXml(string relatesTo, uint instanceId, uint messageNumber)
     {
         string messageId = $"uuid:{Guid.NewGuid()}";
         string typesXml  = string.Join(" ", Types.Select(SerializeQName));
@@ -76,6 +85,7 @@ internal class WsDiscoveryProbeMatch
                 <w:RelatesTo>{relatesTo}</w:RelatesTo>
                 <w:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</w:To>
                 <w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches</w:Action>
+                <d:AppSequence InstanceId="{instanceId}" MessageNumber="{messageNumber}"/>
               </e:Header>
               <e:Body>
                 <d:ProbeMatches>

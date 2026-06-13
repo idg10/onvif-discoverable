@@ -13,6 +13,10 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
     private static readonly XNamespace OnvifNwNs = "http://www.onvif.org/ver10/network/wsdl";
     private static readonly XName NetworkVideoTransmitter = OnvifNwNs.GetName("NetworkVideoTransmitter");
 
+    // InstanceId identifies this run of the process; clients use it to detect restarts.
+    private readonly uint _instanceId = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    private uint _messageNumber = 0;
+
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
         using var udp = new UdpClient(Port);
@@ -56,7 +60,7 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
                 XAddrs = [device.XAddrs],
             };
 
-            var response = probeMatch.ToXml(probe.MessageId);
+            var response = probeMatch.ToXml(probe.MessageId, _instanceId, ++_messageNumber);
             var bytes = Encoding.UTF8.GetBytes(response);
             await udp.SendAsync(bytes, bytes.Length, result.RemoteEndPoint);
         }

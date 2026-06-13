@@ -29,8 +29,8 @@ Items are marked as `[x]` (implemented), `[ ]` (not yet implemented), or `[?]` (
 - [x] `wsa:RelatesTo` — echoes the incoming `wsa:MessageID`
 - [x] `wsa:To` = `http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous`  
   *Was incorrectly set to `urn:schemas-xmlsoap-org:ws:2005:04:discovery` (the discovery endpoint URI from the incoming Probe request). Fixed.*
-- [ ] `d:AppSequence` header element with `InstanceId` and `MessageNumber` attributes  
-  *Present in all real camera captures (e.g. `<d:AppSequence InstanceId="1637072188" MessageNumber="17"/>`). Required by the WS-Discovery spec to allow clients to detect missed or out-of-order messages. We currently omit this entirely.*
+- [x] `d:AppSequence` header element with `InstanceId` and `MessageNumber` attributes  
+  *Present in all real camera captures (e.g. `<d:AppSequence InstanceId="1637072188" MessageNumber="17"/>`). `InstanceId` is set to the Unix timestamp at process start; `MessageNumber` is a per-instance counter incremented for each response sent.*
 
 ---
 
