@@ -74,7 +74,7 @@ internal class WsDiscoveryProbeMatch
               <e:Header>
                 <w:MessageID>{messageId}</w:MessageID>
                 <w:RelatesTo>{relatesTo}</w:RelatesTo>
-                <w:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To>
+                <w:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</w:To>
                 <w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches</w:Action>
               </e:Header>
               <e:Body>
