@@ -23,12 +23,17 @@ internal class WsDiscoveryProbeRequest
     private static readonly XName WsdTypesName     = WsdNs.GetName("Types");
 
     public string MessageId { get; }
-    public XName Type { get; }
 
-    private WsDiscoveryProbeRequest(string messageId, XName type)
+    /// <summary>
+    /// The requested device types. An empty list means the probe matches any type (the
+    /// wsd:Types element was absent or empty, per the WS-Discovery spec).
+    /// </summary>
+    public IReadOnlyList<XName> Types { get; }
+
+    private WsDiscoveryProbeRequest(string messageId, IReadOnlyList<XName> types)
     {
         MessageId = messageId;
-        Type = type;
+        Types = types;
     }
 
     public static bool TryParse(
@@ -72,20 +77,48 @@ internal class WsDiscoveryProbeRequest
             return false;
         }
 
-        if (probeElement.Element(WsdTypesName) is not XElement typesElement)
+        // wsd:Types is optional; absence means match any type (list of xs:QName per spec)
+        XElement? typesElement = probeElement.Element(WsdTypesName);
+        if (!TryParseTypes(typesElement, out IReadOnlyList<XName>? types))
         {
-            Console.WriteLine("Probe does not appear to be a WS-Discovery Probe request: no wsd:Types");
             return false;
         }
 
-        if (typesElement.Value.Split(':') is not [string prefix, string localName]
-            || typesElement.GetNamespaceOfPrefix(prefix) is not XNamespace typeNs)
+        request = new WsDiscoveryProbeRequest(messageId, types);
+        return true;
+    }
+
+    private static bool TryParseTypes(
+        XElement? typesElement,
+        [NotNullWhen(true)] out IReadOnlyList<XName>? types)
+    {
+        types = null;
+
+        if (typesElement is null || string.IsNullOrWhiteSpace(typesElement.Value))
         {
-            Console.WriteLine("Probe wsd:Types is not a valid qualified name");
-            return false;
+            types = [];
+            return true;
         }
 
-        request = new WsDiscoveryProbeRequest(messageId, typeNs.GetName(localName));
+        var result = new List<XName>();
+        foreach (string token in typesElement.Value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (token.Split(':') is not [string prefix, string localName])
+            {
+                Console.WriteLine($"Probe wsd:Types contains an invalid QName: '{token}'");
+                return false;
+            }
+
+            if (typesElement.GetNamespaceOfPrefix(prefix) is not XNamespace ns)
+            {
+                Console.WriteLine($"Probe wsd:Types contains an unresolvable namespace prefix: '{prefix}'");
+                return false;
+            }
+
+            result.Add(ns.GetName(localName));
+        }
+
+        types = result;
         return true;
     }
 }

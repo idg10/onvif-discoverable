@@ -38,9 +38,9 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
                 continue;
             }
 
-            if (probe.Type != NetworkVideoTransmitter)
+            if (probe.Types.Count > 0 && !probe.Types.Contains(NetworkVideoTransmitter))
             {
-                Console.WriteLine($"WS-Discovery Probe request: ignoring request for {probe.Type}");
+                Console.WriteLine($"WS-Discovery Probe request: ignoring request for [{string.Join(", ", probe.Types)}]");
                 continue;
             }
 
