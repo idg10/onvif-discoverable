@@ -41,16 +41,14 @@ There are no tests at this time.
 
 ## Key Implementation Notes
 
-**Program.cs** is the entire implementation (~128 lines). It:
+**`Program.cs`** — arg parsing, constructs `OnvifDeviceDescription`, starts `WsDiscoveryListener`.
 
-1. Joins the WS-Discovery multicast group on all interfaces
-2. Receives UDP datagrams in a `while(true)` loop
-3. Validates incoming SOAP/XML Probe requests (checks SOAP envelope, WS-Addressing headers, WS-Discovery action, and that the type is `dn:NetworkVideoTransmitter`)
-4. Sends back a `ProbeMatches` SOAP response with a hardcoded endpoint UUID and a placeholder XAddr
+**`OnvifDeviceDescription`** — record holding the device attributes advertised in ProbeMatch responses: `XAddrs`, `EndpointAddress`, `Types`, `Scopes`.
+
+**`WsDiscoveryListener`** — joins the WS-Discovery multicast group, receives UDP datagrams, validates Probe requests, and sends ProbeMatch responses. Accepts a `CancellationToken`; Ctrl+C is wired up in `Program.cs`.
 
 **Known TODOs in the code:**
 - The endpoint UUID (`urn:uuid:314ba71f-...`) has a `// TBD` comment — its intended source/meaning is not yet decided
-- No graceful shutdown (Ctrl+C handling)
 
 ## WS-Discovery / ONVIF Namespaces
 
@@ -66,5 +64,13 @@ The code uses these XML namespaces — keep them consistent:
 ## Conventions
 
 - Single-file approach is intentional — keep logic in `Program.cs` unless it grows significantly
+- Always use braces on `if`/`else` blocks, even single-statement ones — enforced by `.editorconfig` (`csharp_prefer_braces = true:warning`)
 - No culture-sensitive code (`InvariantGlobalization: true`)
 - Console output is the only logging mechanism; no logging framework is used
+
+### Nullability
+
+Nullable reference types are enabled project-wide. Follow standard .NET nullability annotation conventions:
+
+- `Try`-pattern methods must use `out T?` (nullable) with `[NotNullWhen(true)]` from `System.Diagnostics.CodeAnalysis` — not `out T` with a sentinel default — so the compiler can track nullability through the success path.
+- Annotate any other methods that conditionally populate output/return values with the appropriate attributes (`[NotNullWhen]`, `[MaybeNullWhen]`, `[MemberNotNullWhen]`, etc.) rather than suppressing warnings with `!` or dummy values.
