@@ -23,8 +23,8 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
             var result = await udp.ReceiveAsync(cancellationToken);
             string requestXml = Encoding.UTF8.GetString(result.Buffer);
 
-            Console.WriteLine("Received request:");
-            Console.WriteLine(requestXml);
+            Console.WriteLine("Received request");
+            //Console.WriteLine(requestXml);
 
             if (!requestXml.Contains("Probe"))
             {
@@ -42,6 +42,10 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
             {
                 Console.WriteLine($"WS-Discovery Probe request: ignoring request for [{string.Join(", ", probe.Types)}]");
                 continue;
+            }
+            else
+            {
+                Console.WriteLine($"WS-Discovery Probe request types: [{string.Join(", ", probe.Types)}]");
             }
 
             var probeMatch = new WsDiscoveryProbeMatch
