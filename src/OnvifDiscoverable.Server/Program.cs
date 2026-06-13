@@ -8,9 +8,11 @@ if (args.Length != 1)
 }
 
 // TBD: EndpointAddress should be derived or configurable
-var device = new OnvifDeviceDescription(
-    XAddrs: args[0],
-    EndpointAddress: "urn:uuid:314ba71f-a192-4054-9436-e19eb037f074");
+var device = new OnvifDeviceDescription
+{
+    XAddrs = new Uri(args[0]),
+    EndpointAddress = "urn:uuid:314ba71f-a192-4054-9436-e19eb037f074",
+};
 
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };

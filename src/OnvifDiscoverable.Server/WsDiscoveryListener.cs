@@ -44,42 +44,17 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
                 continue;
             }
 
-            var response = BuildProbeMatchResponse(probe.MessageId);
+            var probeMatch = new WsDiscoveryProbeMatch
+            {
+                EndpointAddress = device.EndpointAddress,
+                Types = device.Types,
+                Scopes = device.Scopes,
+                XAddrs = [device.XAddrs],
+            };
+
+            var response = probeMatch.ToXml(probe.MessageId);
             var bytes = Encoding.UTF8.GetBytes(response);
             await udp.SendAsync(bytes, bytes.Length, result.RemoteEndPoint);
         }
-    }
-
-    private string BuildProbeMatchResponse(string incomingMessageId)
-    {
-        string messageId = $"uuid:{Guid.NewGuid()}";
-
-        return $"""
-            <?xml version="1.0" encoding="UTF-8"?>
-            <e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope"
-                        xmlns:w="http://schemas.xmlsoap.org/ws/2004/08/addressing"
-                        xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery"
-                        xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
-              <e:Header>
-                <w:MessageID>{messageId}</w:MessageID>
-                <w:RelatesTo>{incomingMessageId}</w:RelatesTo>
-                <w:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To>
-                <w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches</w:Action>
-              </e:Header>
-              <e:Body>
-                <d:ProbeMatches>
-                  <d:ProbeMatch>
-                    <w:EndpointReference>
-                      <w:Address>{device.EndpointAddress}</w:Address>
-                    </w:EndpointReference>
-                    <d:Types>{device.Types}</d:Types>
-                    <d:Scopes>{device.Scopes}</d:Scopes>
-                    <d:XAddrs>{device.XAddrs}</d:XAddrs>
-                    <d:MetadataVersion>1</d:MetadataVersion>
-                  </d:ProbeMatch>
-                </d:ProbeMatches>
-              </e:Body>
-            </e:Envelope>
-            """;
     }
 }
