@@ -2,7 +2,7 @@
   "profiles": {
     "OnvifDiscoverable.Server": {
       "commandName": "Project",
-      "commandLineArgs": "rtsp://IanG-P16:8554/"
+      "commandLineArgs": "rtsp://IanG-P16:8554/ RemoteCam BuiltIn"
     }
   }
 }

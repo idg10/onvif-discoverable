@@ -1,9 +1,9 @@
 using OnvifDiscoverable.Server;
 
-if (args.Length != 1)
+if (args.Length != 3)
 {
-    Console.Error.WriteLine("Usage: OnvifDiscoverable.Server <xaddrs-url>");
-    Console.Error.WriteLine("  e.g. OnvifDiscoverable.Server http://192.168.1.10:8080/onvif/device_service");
+    Console.Error.WriteLine("Usage: OnvifDiscoverable.Server <xaddrs-url> <name> <hardware>");
+    Console.Error.WriteLine("  e.g. OnvifDiscoverable.Server http://192.168.1.10:8080/onvif/device_service \"My Camera\" \"Acme Model X\"");
     return 1;
 }
 
@@ -12,6 +12,8 @@ var device = new OnvifDeviceDescription
 {
     XAddrs = new Uri(args[0]),
     EndpointAddress = "urn:uuid:314ba71f-a192-4054-9436-e19eb037f074",
+    Name = args[1],
+    Hardware = args[2],
 };
 
 using var cts = new CancellationTokenSource();

@@ -30,8 +30,8 @@ onvif-discoverable/
 # Build
 dotnet build src/
 
-# Run (xaddrs-url is the ONVIF device service URL advertised in ProbeMatch responses)
-dotnet run --project src/OnvifDiscoverable.Server/ -- http://192.168.1.10:8080/onvif/device_service
+# Run (xaddrs-url, name, hardware are advertised in ProbeMatch responses)
+dotnet run --project src/OnvifDiscoverable.Server/ -- http://192.168.1.10:8080/onvif/device_service "My Camera" "Acme Model X"
 
 # Publish as native AOT executable
 dotnet publish -c Release -p:PublishAot=true src/OnvifDiscoverable.Server/

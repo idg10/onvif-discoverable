@@ -57,9 +57,9 @@ Scope matching uses RFC 3986 path-prefix matching: `onvif://www.onvif.org/hardwa
 
 - [x] `onvif://www.onvif.org/Profile/Streaming`  
   *Profile S §9.1: required to indicate Profile S compliance*
-- [ ] `onvif://www.onvif.org/hardware/<value>`  
+- [x] `onvif://www.onvif.org/hardware/<value>`  
   *Core §7.3.2.2 Table 8: **"A device shall include at least one hardware entry into its scope list."***
-- [ ] `onvif://www.onvif.org/name/<value>`  
+- [x] `onvif://www.onvif.org/name/<value>`  
   *Core §7.3.2.2 Table 8: **"A device shall include at least one name entry into its scope list."***
 
 ### 5b. Optional but standardised scopes
@@ -106,5 +106,5 @@ Scope matching uses RFC 3986 path-prefix matching: `onvif://www.onvif.org/hardwa
 
 Based on the above and experimental observation (Windows 11 probes for `dn:NetworkVideoTransmitter` only):
 
-1. **Missing mandatory `name` and `hardware` scopes.** Windows's strict implementation may reject a ProbeMatch that does not include these. (Item 5a) — **most likely current blocker**
+1. ~~**Missing mandatory `name` and `hardware` scopes.**~~ Now implemented. (Item 5a)
 2. **Windows probes for `tds:Device`, which we currently ignore.** (Item 1 / Item 4) — *not currently observed, revisit once `dn:NetworkVideoTransmitter` works*
