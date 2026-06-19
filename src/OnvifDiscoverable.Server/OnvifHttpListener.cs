@@ -258,19 +258,22 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                       <tt:Bounds x="0" y="0" width="1920" height="1080"/>
                     </tt:VideoSourceConfiguration>
                     <tt:VideoEncoderConfiguration token="vec_0">
-                      <tt:Name>MJPEG Encoder</tt:Name>
+                      <tt:Name>H264 Encoder</tt:Name>
                       <tt:UseCount>1</tt:UseCount>
-                      <tt:Encoding>JPEG</tt:Encoding>
+                      <tt:Encoding>H264</tt:Encoding>
                       <tt:Resolution>
                         <tt:Width>1920</tt:Width>
                         <tt:Height>1080</tt:Height>
                       </tt:Resolution>
-                      <tt:Quality>50</tt:Quality>
                       <tt:RateControl>
                         <tt:FrameRateLimit>30</tt:FrameRateLimit>
                         <tt:EncodingInterval>1</tt:EncodingInterval>
                         <tt:BitrateLimit>4096</tt:BitrateLimit>
                       </tt:RateControl>
+                      <tt:H264>
+                        <tt:GovLength>30</tt:GovLength>
+                        <tt:H264Profile>Main</tt:H264Profile>
+                      </tt:H264>
                       <tt:SessionTimeout>PT60S</tt:SessionTimeout>
                     </tt:VideoEncoderConfiguration>
                   </trt:Profiles>
@@ -281,14 +284,16 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
         WrapSoapBody("""
                 <trt:GetVideoEncoderConfigurationOptionsResponse>
                   <trt:Options>
-                    <tt:JPEG>
+                    <tt:H264>
                       <tt:ResolutionsAvailable>
                         <tt:Width>1920</tt:Width>
                         <tt:Height>1080</tt:Height>
                       </tt:ResolutionsAvailable>
+                      <tt:GovLengthRange Min="1" Max="300"/>
                       <tt:FrameRateRange Min="1" Max="30"/>
                       <tt:EncodingIntervalRange Min="1" Max="1"/>
-                    </tt:JPEG>
+                      <tt:H264ProfilesSupported>Main</tt:H264ProfilesSupported>
+                    </tt:H264>
                   </trt:Options>
                 </trt:GetVideoEncoderConfigurationOptionsResponse>
             """);
