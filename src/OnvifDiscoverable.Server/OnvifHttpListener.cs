@@ -96,6 +96,7 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
 
             string? action = ExtractSoapAction(body);
 
+            Console.WriteLine(action);
             string responseBody = action switch
             {
                 "http://www.onvif.org/ver10/device/wsdl/GetServiceCapabilities"            => BuildGetServiceCapabilitiesResponse(),
