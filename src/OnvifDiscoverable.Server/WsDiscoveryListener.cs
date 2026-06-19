@@ -19,7 +19,9 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
-        using var udp = new UdpClient(Port);
+        using var udp = new UdpClient();
+        udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        udp.Client.Bind(new IPEndPoint(IPAddress.Any, Port));
         udp.JoinMulticastGroup(MulticastAddress);
 
         try
