@@ -107,6 +107,7 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                 "http://www.onvif.org/ver10/device/wsdl/GetCapabilities"                   => BuildGetCapabilitiesResponse(),
                 "http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation"              => BuildGetDeviceInformationResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetVideoSources"                    => BuildGetVideoSourcesResponse(),
+                "http://www.onvif.org/ver10/media/wsdl/GetVideoSourceConfigurations"       => BuildGetVideoSourceConfigurationsResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetProfiles"                        => BuildGetProfilesResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetProfile"                         => BuildGetProfileResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurationOptions" => BuildGetVideoEncoderConfigurationOptionsResponse(),
@@ -389,6 +390,18 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                                 StorageConfiguration="false"/>
                   </tds:Capabilities>
                 </tds:GetServiceCapabilitiesResponse>
+            """);
+
+    private string BuildGetVideoSourceConfigurationsResponse() =>
+        WrapSoapBody("""
+                <trt:GetVideoSourceConfigurationsResponse>
+                  <trt:Configurations token="vsc_0">
+                    <tt:Name>Video Source</tt:Name>
+                    <tt:UseCount>1</tt:UseCount>
+                    <tt:SourceToken>video_source_0</tt:SourceToken>
+                    <tt:Bounds x="0" y="0" width="1920" height="1080"/>
+                  </trt:Configurations>
+                </trt:GetVideoSourceConfigurationsResponse>
             """);
 
     private string BuildGetVideoSourcesResponse() =>
