@@ -266,6 +266,7 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                         <tt:Width>1920</tt:Width>
                         <tt:Height>1080</tt:Height>
                       </tt:Resolution>
+                      <tt:Quality>50</tt:Quality>
                       <tt:RateControl>
                         <tt:FrameRateLimit>30</tt:FrameRateLimit>
                         <tt:EncodingInterval>1</tt:EncodingInterval>
@@ -275,6 +276,15 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                         <tt:GovLength>30</tt:GovLength>
                         <tt:H264Profile>Main</tt:H264Profile>
                       </tt:H264>
+                      <tt:Multicast>
+                        <tt:Address>
+                          <tt:Type>IPv4</tt:Type>
+                          <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
+                        </tt:Address>
+                        <tt:Port>0</tt:Port>
+                        <tt:TTL>0</tt:TTL>
+                        <tt:AutoStart>false</tt:AutoStart>
+                      </tt:Multicast>
                       <tt:SessionTimeout>PT60S</tt:SessionTimeout>
                     </tt:VideoEncoderConfiguration>
                   </trt:Profiles>
