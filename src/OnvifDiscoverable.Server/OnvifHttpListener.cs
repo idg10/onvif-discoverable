@@ -98,9 +98,13 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
 
             string responseBody = action switch
             {
+                "http://www.onvif.org/ver10/device/wsdl/GetServiceCapabilities"            => BuildGetServiceCapabilitiesResponse(),
                 "http://www.onvif.org/ver10/device/wsdl/GetSystemDateAndTime"              => BuildGetSystemDateAndTimeResponse(),
+                "http://www.onvif.org/ver10/device/wsdl/GetHostname"                       => BuildGetHostnameResponse(),
+                "http://www.onvif.org/ver10/device/wsdl/GetNetworkProtocols"               => BuildGetNetworkProtocolsResponse(),
                 "http://www.onvif.org/ver10/device/wsdl/GetCapabilities"                   => BuildGetCapabilitiesResponse(),
                 "http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation"              => BuildGetDeviceInformationResponse(),
+                "http://www.onvif.org/ver10/media/wsdl/GetVideoSources"                    => BuildGetVideoSourcesResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetProfiles"                        => BuildGetProfilesResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurationOptions" => BuildGetVideoEncoderConfigurationOptionsResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetStreamUri"                       => BuildGetStreamUriResponse(),
@@ -136,10 +140,37 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
         try
         {
             var doc = XDocument.Parse(xml);
-            return doc.Root
+            var envelope = doc.Root;
+
+            // Prefer explicit wsa:Action header.
+            string? action = envelope
                 ?.Element(SoapNs + "Header")
                 ?.Element(WsaNs + "Action")
                 ?.Value;
+
+            if (action != null)
+            {
+                return action;
+            }
+
+            // Fall back to deriving the action from the body element name.
+            // ONVIF clients frequently omit the wsa:Action header and rely on
+            // the body element alone. The action URI follows the ONVIF convention:
+            // {namespace}/{localName} (e.g. GetServiceCapabilities in namespace
+            // http://www.onvif.org/ver10/device/wsdl becomes the full action URI).
+            var bodyChild = envelope
+                ?.Element(SoapNs + "Body")
+                ?.Elements()
+                .FirstOrDefault();
+
+            if (bodyChild?.Name.Namespace is XNamespace ns && ns != XNamespace.None)
+            {
+                string nsUri = ns.NamespaceName;
+                return nsUri.EndsWith('/') ? $"{nsUri}{bodyChild.Name.LocalName}"
+                                           : $"{nsUri}/{bodyChild.Name.LocalName}";
+            }
+
+            return null;
         }
         catch
         {
@@ -276,6 +307,68 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                     <tt:Timeout>PT60S</tt:Timeout>
                   </trt:MediaUri>
                 </trt:GetStreamUriResponse>
+            """);
+
+    private string BuildGetServiceCapabilitiesResponse() =>
+        WrapSoapBody("""
+                <tds:GetServiceCapabilitiesResponse>
+                  <tds:Capabilities>
+                    <tds:Network IPFilter="false" ZeroConfiguration="false" IPVersion6="false"
+                                 DynDNS="false" Dot11Configuration="false" Dot1XConfigurations="0"
+                                 HostnameFromDHCP="false" NTP="0" DHCPv6="false"/>
+                    <tds:Security TLS1.0="false" TLS1.1="false" TLS1.2="false"
+                                  OnboardKeyGeneration="false" AccessPolicyConfig="false"
+                                  DefaultAccessPolicy="false" Dot1X="false"
+                                  RemoteUserHandling="false" X.509Token="false"
+                                  SAMLToken="false" KerberosToken="false"
+                                  UsernameToken="false" HttpDigest="false" RELToken="false"/>
+                    <tds:System DiscoveryResolve="false" DiscoveryBye="false"
+                                RemoteDiscovery="false" SystemBackup="false"
+                                SystemLogging="false" FirmwareUpgrade="false"
+                                HttpFirmwareUpgrade="false" HttpSystemBackup="false"
+                                HttpSystemLogging="false" HttpSupportInformation="false"
+                                StorageConfiguration="false"/>
+                  </tds:Capabilities>
+                </tds:GetServiceCapabilitiesResponse>
+            """);
+
+    private string BuildGetVideoSourcesResponse() =>
+        WrapSoapBody("""
+                <trt:GetVideoSourcesResponse>
+                  <trt:VideoSources token="video_source_0">
+                    <tt:Framerate>30</tt:Framerate>
+                    <tt:Resolution>
+                      <tt:Width>1920</tt:Width>
+                      <tt:Height>1080</tt:Height>
+                    </tt:Resolution>
+                  </trt:VideoSources>
+                </trt:GetVideoSourcesResponse>
+            """);
+
+    private string BuildGetNetworkProtocolsResponse() =>
+        WrapSoapBody($"""
+                <tds:GetNetworkProtocolsResponse>
+                  <tds:NetworkProtocols>
+                    <tt:Name>HTTP</tt:Name>
+                    <tt:Enabled>true</tt:Enabled>
+                    <tt:Port>{device.XAddrs.Port}</tt:Port>
+                  </tds:NetworkProtocols>
+                  <tds:NetworkProtocols>
+                    <tt:Name>RTSP</tt:Name>
+                    <tt:Enabled>true</tt:Enabled>
+                    <tt:Port>{device.RtspStreamUri.Port}</tt:Port>
+                  </tds:NetworkProtocols>
+                </tds:GetNetworkProtocolsResponse>
+            """);
+
+    private string BuildGetHostnameResponse() =>
+        WrapSoapBody($"""
+                <tds:GetHostnameResponse>
+                  <tds:HostnameInformation>
+                    <tt:FromDHCP>false</tt:FromDHCP>
+                    <tt:Name>{XmlEscape(Environment.MachineName)}</tt:Name>
+                  </tds:HostnameInformation>
+                </tds:GetHostnameResponse>
             """);
 
     private static string BuildFaultResponse(string reason)
