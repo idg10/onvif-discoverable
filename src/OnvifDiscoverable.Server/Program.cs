@@ -7,12 +7,18 @@ if (args.Length != 4)
     return 1;
 }
 
-// TBD: EndpointAddress should be derived or configurable
+// A fresh endpoint UUID on every run guarantees that clients — in particular Windows, which
+// caches discovered cameras by this identity (its device node is swd#networkcamera#<uuid>) —
+// treat this as a brand-new device rather than reusing stale state from a previous run.
+// TODO: for production this should instead be stable across restarts (derived from hardware
+// or provisioned at install), per docs/probe-match-checklist.md item 3.
+string endpointAddress = $"urn:uuid:{Guid.NewGuid()}";
+
 var device = new OnvifDeviceDescription
 {
     XAddrs = new Uri(args[0]),
     RtspStreamUri = new Uri(args[1]),
-    EndpointAddress = "urn:uuid:314ba71f-a192-4054-9436-e19eb037f074",
+    EndpointAddress = endpointAddress,
     Name = args[2],
     Hardware = args[3],
 };
@@ -20,6 +26,7 @@ var device = new OnvifDeviceDescription
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
+Console.WriteLine($"Device endpoint: {endpointAddress}");
 Console.WriteLine("Starting ONVIF services...");
 await Task.WhenAll(
     new WsDiscoveryListener(device).RunAsync(cts.Token),
