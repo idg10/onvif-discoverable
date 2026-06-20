@@ -21,7 +21,14 @@ onvif-discoverable/
 │   ├── OnvifDiscoverable.slnx                      # Solution file (modern .slnx format)
 │   └── OnvifDiscoverable.Server/
 │       ├── OnvifDiscoverable.Server.csproj
-│       └── Program.cs                              # All application logic
+│       ├── Program.cs                              # Entry point: arg parsing, wiring, Ctrl+C
+│       ├── OnvifDeviceDescription.cs               # Device attributes record
+│       ├── WsDiscoveryListener.cs                  # WS-Discovery multicast responder
+│       ├── WsDiscoveryProbeRequest.cs              # Parses incoming Probe requests
+│       ├── WsDiscoveryProbeMatch.cs                # Builds ProbeMatch responses
+│       ├── OnvifHttpListener.cs                    # ONVIF device/media SOAP HTTP server
+│       ├── OnvifSchemaValidator.cs                 # Runtime response schema validation
+│       └── Schemas/                                # Bundled ONVIF/WS-* XSDs (embedded)
 ```
 
 ## Build & Run
@@ -47,7 +54,11 @@ There are no tests at this time.
 
 **`WsDiscoveryListener`** — joins the WS-Discovery multicast group, receives UDP datagrams, validates Probe requests, and sends ProbeMatch responses.
 
-**`OnvifHttpListener`** — HTTP SOAP server. Listens on the host/port from `XAddrs`, dispatches on `wsa:Action`, and handles: `GetSystemDateAndTime`, `GetCapabilities`, `GetDeviceInformation` (device service) and `GetProfiles`, `GetVideoEncoderConfigurationOptions`, `GetStreamUri` (media service). The media service URL is derived from `XAddrs` by replacing the last path segment with `media_service`.
+**`OnvifHttpListener`** — HTTP SOAP server. Listens on the host/port from `XAddrs`, dispatches on `wsa:Action`, and handles: `GetSystemDateAndTime`, `GetCapabilities`, `GetDeviceInformation` (device service) and `GetProfiles`, `GetVideoEncoderConfigurationOptions`, `GetStreamUri` (media service). The media service URL is derived from `XAddrs` by replacing the last path segment with `media_service`. Every response is run through `OnvifSchemaValidator` before being sent.
+
+**`OnvifSchemaValidator`** — validates each outgoing SOAP response against the official ONVIF/WS-* XML schemas at runtime, logging any schema violations to stderr. Windows's WS-Management stack is a strict (WWSAPI) parser that silently rejects non-conformant responses with `WS_E_INVALID_FORMAT`; this catches such mistakes at the point of emission. The schemas are bundled as embedded resources (`Schemas/*.xsd`) so no network access is needed. If the schema set fails to load, validation is skipped rather than blocking the server. Note: `System.Xml.Schema` validation is a development aid and may need gating before an AOT `publish` (it currently degrades gracefully if trimming removes anything it needs).
+
+**`Schemas/`** — the 12 bundled `.xsd` files: the four ONVIF schemas (`onvif.xsd`, `common.xsd`, plus `tds.xsd`/`trt.xsd` extracted from the device/media WSDLs) and their eight transitive external imports (SOAP-envelope, WS-Addressing, WS-Notification `b-2`/`bf-2`/`t-1`, xmlmime, xop, `xml.xsd`). Embedded via the `EmbeddedResource` item in the `.csproj`.
 
 **Known TODOs in the code:**
 - The endpoint UUID (`urn:uuid:314ba71f-...`) has a `// TBD` comment — its intended source/meaning is not yet decided

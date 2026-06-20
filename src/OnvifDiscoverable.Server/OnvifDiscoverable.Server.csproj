@@ -9,4 +9,9 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- ONVIF/WS-* schemas bundled for offline runtime response validation. -->
+    <EmbeddedResource Include="Schemas\*.xsd" />
+  </ItemGroup>
+
 </Project>

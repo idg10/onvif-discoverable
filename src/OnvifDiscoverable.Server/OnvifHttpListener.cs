@@ -9,6 +9,10 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
     private static readonly XNamespace SoapNs = "http://www.w3.org/2003/05/soap-envelope";
     private static readonly XNamespace WsaNs  = "http://schemas.xmlsoap.org/ws/2004/08/addressing";
 
+    // Validates every outgoing response against the ONVIF schemas. Null if the schema set
+    // could not be loaded (validation is then skipped rather than blocking the server).
+    private readonly OnvifSchemaValidator? _validator = OnvifSchemaValidator.TryCreate();
+
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         using var listener = new HttpListener();
@@ -117,7 +121,7 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                 _ => BuildFaultResponse($"Unsupported action: {action ?? "(none)"}"),
             };
 
-            Console.WriteLine($"Response:\n{responseBody}\n---");
+            ValidateResponse(action, responseBody);
 
             byte[] responseBytes = Encoding.UTF8.GetBytes(responseBody);
             context.Response.ContentType = "application/soap+xml; charset=utf-8";
@@ -141,6 +145,27 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
         {
             context.Response.Close();
         }
+    }
+
+    private void ValidateResponse(string? action, string responseXml)
+    {
+        if (_validator is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> errors = _validator.Validate(responseXml);
+        if (errors.Count == 0)
+        {
+            return;
+        }
+
+        Console.Error.WriteLine($"*** SCHEMA VALIDATION FAILED for response to '{action ?? "(no action)"}' ***");
+        foreach (string error in errors)
+        {
+            Console.Error.WriteLine($"    {error}");
+        }
+        Console.Error.WriteLine(responseXml);
     }
 
     private static string? ExtractSoapAction(string xml)
@@ -395,14 +420,27 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
         WrapSoapBody("""
                 <trt:GetVideoEncoderConfigurationOptionsResponse>
                   <trt:Options>
+                    <tt:QualityRange>
+                      <tt:Min>1</tt:Min>
+                      <tt:Max>100</tt:Max>
+                    </tt:QualityRange>
                     <tt:H264>
                       <tt:ResolutionsAvailable>
                         <tt:Width>1920</tt:Width>
                         <tt:Height>1080</tt:Height>
                       </tt:ResolutionsAvailable>
-                      <tt:GovLengthRange Min="1" Max="300"/>
-                      <tt:FrameRateRange Min="1" Max="30"/>
-                      <tt:EncodingIntervalRange Min="1" Max="1"/>
+                      <tt:GovLengthRange>
+                        <tt:Min>1</tt:Min>
+                        <tt:Max>300</tt:Max>
+                      </tt:GovLengthRange>
+                      <tt:FrameRateRange>
+                        <tt:Min>1</tt:Min>
+                        <tt:Max>30</tt:Max>
+                      </tt:FrameRateRange>
+                      <tt:EncodingIntervalRange>
+                        <tt:Min>1</tt:Min>
+                        <tt:Max>1</tt:Max>
+                      </tt:EncodingIntervalRange>
                       <tt:H264ProfilesSupported>Main</tt:H264ProfilesSupported>
                     </tt:H264>
                   </trt:Options>
@@ -436,7 +474,7 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                                   UsernameToken="false" HttpDigest="false" RELToken="false"/>
                     <tds:System DiscoveryResolve="false" DiscoveryBye="false"
                                 RemoteDiscovery="false" SystemBackup="false"
-                                SystemLogging="false" FirmwareUpgrade="false"
+                                SystemLogging="false" CloudFirmwareUpgrade="false"
                                 HttpFirmwareUpgrade="false" HttpSystemBackup="false"
                                 HttpSystemLogging="false" HttpSupportInformation="false"
                                 StorageConfiguration="false"/>
