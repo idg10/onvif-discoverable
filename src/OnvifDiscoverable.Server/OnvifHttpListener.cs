@@ -295,90 +295,64 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                 </tds:GetDeviceInformationResponse>
             """);
 
+    // The device advertises a single fixed MJPEG (JPEG-encoded) stream. The video source and
+    // video encoder configurations appear verbatim in several media responses (inside a profile,
+    // and standalone), so each is produced once here under a caller-supplied wrapper element.
+    private static string VideoSourceConfiguration(string element, string token) => $"""
+        <{element} token="{token}">
+          <tt:Name>Video Source</tt:Name>
+          <tt:UseCount>1</tt:UseCount>
+          <tt:SourceToken>video_source_0</tt:SourceToken>
+          <tt:Bounds x="0" y="0" width="1920" height="1080"/>
+        </{element}>
+        """;
+
+    private static string VideoEncoderConfiguration(string element, string token) => $"""
+        <{element} token="{token}">
+          <tt:Name>MJPEG Encoder</tt:Name>
+          <tt:UseCount>1</tt:UseCount>
+          <tt:Encoding>JPEG</tt:Encoding>
+          <tt:Resolution>
+            <tt:Width>1920</tt:Width>
+            <tt:Height>1080</tt:Height>
+          </tt:Resolution>
+          <tt:Quality>50</tt:Quality>
+          <tt:RateControl>
+            <tt:FrameRateLimit>30</tt:FrameRateLimit>
+            <tt:EncodingInterval>1</tt:EncodingInterval>
+            <tt:BitrateLimit>4096</tt:BitrateLimit>
+          </tt:RateControl>
+          <tt:Multicast>
+            <tt:Address>
+              <tt:Type>IPv4</tt:Type>
+              <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
+            </tt:Address>
+            <tt:Port>0</tt:Port>
+            <tt:TTL>0</tt:TTL>
+            <tt:AutoStart>false</tt:AutoStart>
+          </tt:Multicast>
+          <tt:SessionTimeout>PT60S</tt:SessionTimeout>
+        </{element}>
+        """;
+
     private string BuildGetProfilesResponse() =>
-        WrapSoapBody("""
+        WrapSoapBody($"""
                 <trt:GetProfilesResponse>
                   <trt:Profiles token="profile_0" fixed="true">
                     <tt:Name>Main Profile</tt:Name>
-                    <tt:VideoSourceConfiguration token="vsc_0">
-                      <tt:Name>Video Source</tt:Name>
-                      <tt:UseCount>1</tt:UseCount>
-                      <tt:SourceToken>video_source_0</tt:SourceToken>
-                      <tt:Bounds x="0" y="0" width="1920" height="1080"/>
-                    </tt:VideoSourceConfiguration>
-                    <tt:VideoEncoderConfiguration token="vec_0">
-                      <tt:Name>H264 Encoder</tt:Name>
-                      <tt:UseCount>1</tt:UseCount>
-                      <tt:Encoding>H264</tt:Encoding>
-                      <tt:Resolution>
-                        <tt:Width>1920</tt:Width>
-                        <tt:Height>1080</tt:Height>
-                      </tt:Resolution>
-                      <tt:Quality>50</tt:Quality>
-                      <tt:RateControl>
-                        <tt:FrameRateLimit>30</tt:FrameRateLimit>
-                        <tt:EncodingInterval>1</tt:EncodingInterval>
-                        <tt:BitrateLimit>4096</tt:BitrateLimit>
-                      </tt:RateControl>
-                      <tt:H264>
-                        <tt:GovLength>30</tt:GovLength>
-                        <tt:H264Profile>Main</tt:H264Profile>
-                      </tt:H264>
-                      <tt:Multicast>
-                        <tt:Address>
-                          <tt:Type>IPv4</tt:Type>
-                          <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
-                        </tt:Address>
-                        <tt:Port>0</tt:Port>
-                        <tt:TTL>0</tt:TTL>
-                        <tt:AutoStart>false</tt:AutoStart>
-                      </tt:Multicast>
-                      <tt:SessionTimeout>PT60S</tt:SessionTimeout>
-                    </tt:VideoEncoderConfiguration>
+                    {VideoSourceConfiguration("tt:VideoSourceConfiguration", "vsc_0")}
+                    {VideoEncoderConfiguration("tt:VideoEncoderConfiguration", "vec_0")}
                   </trt:Profiles>
                 </trt:GetProfilesResponse>
             """);
 
     private string BuildGetProfileResponse() =>
-        WrapSoapBody("""
+        WrapSoapBody($"""
                 <trt:GetProfileResponse>
                   <trt:Profile token="profile_0" fixed="true">
                     <tt:Name>Main Profile</tt:Name>
-                    <tt:VideoSourceConfiguration token="vsc_0">
-                      <tt:Name>Video Source</tt:Name>
-                      <tt:UseCount>1</tt:UseCount>
-                      <tt:SourceToken>video_source_0</tt:SourceToken>
-                      <tt:Bounds x="0" y="0" width="1920" height="1080"/>
-                    </tt:VideoSourceConfiguration>
-                    <tt:VideoEncoderConfiguration token="vec_0">
-                      <tt:Name>H264 Encoder</tt:Name>
-                      <tt:UseCount>1</tt:UseCount>
-                      <tt:Encoding>H264</tt:Encoding>
-                      <tt:Resolution>
-                        <tt:Width>1920</tt:Width>
-                        <tt:Height>1080</tt:Height>
-                      </tt:Resolution>
-                      <tt:Quality>50</tt:Quality>
-                      <tt:RateControl>
-                        <tt:FrameRateLimit>30</tt:FrameRateLimit>
-                        <tt:EncodingInterval>1</tt:EncodingInterval>
-                        <tt:BitrateLimit>4096</tt:BitrateLimit>
-                      </tt:RateControl>
-                      <tt:H264>
-                        <tt:GovLength>30</tt:GovLength>
-                        <tt:H264Profile>Main</tt:H264Profile>
-                      </tt:H264>
-                      <tt:Multicast>
-                        <tt:Address>
-                          <tt:Type>IPv4</tt:Type>
-                          <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
-                        </tt:Address>
-                        <tt:Port>0</tt:Port>
-                        <tt:TTL>0</tt:TTL>
-                        <tt:AutoStart>false</tt:AutoStart>
-                      </tt:Multicast>
-                      <tt:SessionTimeout>PT60S</tt:SessionTimeout>
-                    </tt:VideoEncoderConfiguration>
+                    {VideoSourceConfiguration("tt:VideoSourceConfiguration", "vsc_0")}
+                    {VideoEncoderConfiguration("tt:VideoEncoderConfiguration", "vec_0")}
                   </trt:Profile>
                 </trt:GetProfileResponse>
             """);
@@ -389,72 +363,16 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
         WrapSoapBody("<trt:SetVideoEncoderConfigurationResponse/>");
 
     private string BuildGetVideoEncoderConfigurationResponse() =>
-        WrapSoapBody("""
+        WrapSoapBody($"""
                 <trt:GetVideoEncoderConfigurationResponse>
-                  <trt:Configuration token="vec_0">
-                    <tt:Name>H264 Encoder</tt:Name>
-                    <tt:UseCount>1</tt:UseCount>
-                    <tt:Encoding>H264</tt:Encoding>
-                    <tt:Resolution>
-                      <tt:Width>1920</tt:Width>
-                      <tt:Height>1080</tt:Height>
-                    </tt:Resolution>
-                    <tt:Quality>50</tt:Quality>
-                    <tt:RateControl>
-                      <tt:FrameRateLimit>30</tt:FrameRateLimit>
-                      <tt:EncodingInterval>1</tt:EncodingInterval>
-                      <tt:BitrateLimit>4096</tt:BitrateLimit>
-                    </tt:RateControl>
-                    <tt:H264>
-                      <tt:GovLength>30</tt:GovLength>
-                      <tt:H264Profile>Main</tt:H264Profile>
-                    </tt:H264>
-                    <tt:Multicast>
-                      <tt:Address>
-                        <tt:Type>IPv4</tt:Type>
-                        <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
-                      </tt:Address>
-                      <tt:Port>0</tt:Port>
-                      <tt:TTL>0</tt:TTL>
-                      <tt:AutoStart>false</tt:AutoStart>
-                    </tt:Multicast>
-                    <tt:SessionTimeout>PT60S</tt:SessionTimeout>
-                  </trt:Configuration>
+                  {VideoEncoderConfiguration("trt:Configuration", "vec_0")}
                 </trt:GetVideoEncoderConfigurationResponse>
             """);
 
     private string BuildGetVideoEncoderConfigurationsResponse() =>
-        WrapSoapBody("""
+        WrapSoapBody($"""
                 <trt:GetVideoEncoderConfigurationsResponse>
-                  <trt:Configurations token="vec_0">
-                    <tt:Name>H264 Encoder</tt:Name>
-                    <tt:UseCount>1</tt:UseCount>
-                    <tt:Encoding>H264</tt:Encoding>
-                    <tt:Resolution>
-                      <tt:Width>1920</tt:Width>
-                      <tt:Height>1080</tt:Height>
-                    </tt:Resolution>
-                    <tt:Quality>50</tt:Quality>
-                    <tt:RateControl>
-                      <tt:FrameRateLimit>30</tt:FrameRateLimit>
-                      <tt:EncodingInterval>1</tt:EncodingInterval>
-                      <tt:BitrateLimit>4096</tt:BitrateLimit>
-                    </tt:RateControl>
-                    <tt:H264>
-                      <tt:GovLength>30</tt:GovLength>
-                      <tt:H264Profile>Main</tt:H264Profile>
-                    </tt:H264>
-                    <tt:Multicast>
-                      <tt:Address>
-                        <tt:Type>IPv4</tt:Type>
-                        <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
-                      </tt:Address>
-                      <tt:Port>0</tt:Port>
-                      <tt:TTL>0</tt:TTL>
-                      <tt:AutoStart>false</tt:AutoStart>
-                    </tt:Multicast>
-                    <tt:SessionTimeout>PT60S</tt:SessionTimeout>
-                  </trt:Configurations>
+                  {VideoEncoderConfiguration("trt:Configurations", "vec_0")}
                 </trt:GetVideoEncoderConfigurationsResponse>
             """);
 
@@ -466,15 +384,11 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                       <tt:Min>1</tt:Min>
                       <tt:Max>100</tt:Max>
                     </tt:QualityRange>
-                    <tt:H264>
+                    <tt:JPEG>
                       <tt:ResolutionsAvailable>
                         <tt:Width>1920</tt:Width>
                         <tt:Height>1080</tt:Height>
                       </tt:ResolutionsAvailable>
-                      <tt:GovLengthRange>
-                        <tt:Min>1</tt:Min>
-                        <tt:Max>300</tt:Max>
-                      </tt:GovLengthRange>
                       <tt:FrameRateRange>
                         <tt:Min>1</tt:Min>
                         <tt:Max>30</tt:Max>
@@ -483,8 +397,7 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                         <tt:Min>1</tt:Min>
                         <tt:Max>1</tt:Max>
                       </tt:EncodingIntervalRange>
-                      <tt:H264ProfilesSupported>Main</tt:H264ProfilesSupported>
-                    </tt:H264>
+                    </tt:JPEG>
                   </trt:Options>
                 </trt:GetVideoEncoderConfigurationOptionsResponse>
             """);
@@ -525,14 +438,9 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
             """);
 
     private string BuildGetVideoSourceConfigurationsResponse() =>
-        WrapSoapBody("""
+        WrapSoapBody($"""
                 <trt:GetVideoSourceConfigurationsResponse>
-                  <trt:Configurations token="vsc_0">
-                    <tt:Name>Video Source</tt:Name>
-                    <tt:UseCount>1</tt:UseCount>
-                    <tt:SourceToken>video_source_0</tt:SourceToken>
-                    <tt:Bounds x="0" y="0" width="1920" height="1080"/>
-                  </trt:Configurations>
+                  {VideoSourceConfiguration("trt:Configurations", "vsc_0")}
                 </trt:GetVideoSourceConfigurationsResponse>
             """);
 
