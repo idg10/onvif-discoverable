@@ -31,29 +31,31 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
                 var result = await udp.ReceiveAsync(cancellationToken);
                 string requestXml = Encoding.UTF8.GetString(result.Buffer);
 
-                Console.WriteLine("Received request");
-                //Console.WriteLine(requestXml);
+                Console.WriteLine($"[{DateTimeOffset.Now:HH:mm:ss.fff}] Received {result.Buffer.Length} bytes from {result.RemoteEndPoint}");
 
                 if (!requestXml.Contains("Probe"))
                 {
+                    Console.WriteLine("  (not a Probe — ignoring)");
                     continue;
                 }
-
-                Console.WriteLine("Received Probe");
 
                 if (!WsDiscoveryProbeRequest.TryParse(requestXml, out WsDiscoveryProbeRequest? probe))
                 {
+                    Console.WriteLine("  Probe failed to parse:");
+                    Console.WriteLine(requestXml);
                     continue;
                 }
 
+                Console.WriteLine($"  Probe MessageID: {probe.MessageId}");
+
                 if (probe.Types.Count > 0 && !probe.Types.Contains(NetworkVideoTransmitter))
                 {
-                    Console.WriteLine($"WS-Discovery Probe request: ignoring request for [{string.Join(", ", probe.Types)}]");
+                    Console.WriteLine($"  Ignoring Probe for types [{string.Join(", ", probe.Types)}] — not NetworkVideoTransmitter");
                     continue;
                 }
                 else
                 {
-                    Console.WriteLine($"WS-Discovery Probe request types: [{string.Join(", ", probe.Types)}]");
+                    Console.WriteLine($"  Probe types: [{string.Join(", ", probe.Types)}]");
                 }
 
                 var probeMatch = new WsDiscoveryProbeMatch
@@ -67,6 +69,10 @@ class WsDiscoveryListener(OnvifDeviceDescription device)
                 var response = probeMatch.ToXml(probe.MessageId, _instanceId, ++_messageNumber);
                 var bytes = Encoding.UTF8.GetBytes(response);
                 await udp.SendAsync(bytes.AsMemory(), result.RemoteEndPoint, cancellationToken);
+
+                Console.WriteLine($"  Sent ProbeMatch ({bytes.Length} bytes, MessageNumber {_messageNumber}) to {result.RemoteEndPoint}:");
+                Console.WriteLine(response);
+                Console.WriteLine("  ---");
             }
         }
         catch (OperationCanceledException)
