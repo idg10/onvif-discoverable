@@ -117,6 +117,7 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                 "http://www.onvif.org/ver10/media/wsdl/GetProfile"                         => BuildGetProfileResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurations"       => BuildGetVideoEncoderConfigurationsResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfiguration"        => BuildGetVideoEncoderConfigurationResponse(),
+                "http://www.onvif.org/ver10/media/wsdl/SetVideoEncoderConfiguration"        => BuildSetVideoEncoderConfigurationResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurationOptions" => BuildGetVideoEncoderConfigurationOptionsResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetStreamUri"                       => BuildGetStreamUriResponse(),
                 _ => BuildFaultResponse($"Unsupported action: {action ?? "(none)"}"),
@@ -381,6 +382,11 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                   </trt:Profile>
                 </trt:GetProfileResponse>
             """);
+
+    // We expose a single fixed encoder configuration and do not actually apply changes, but
+    // acknowledging the Set keeps the client's configuration flow happy.
+    private string BuildSetVideoEncoderConfigurationResponse() =>
+        WrapSoapBody("<trt:SetVideoEncoderConfigurationResponse/>");
 
     private string BuildGetVideoEncoderConfigurationResponse() =>
         WrapSoapBody("""
