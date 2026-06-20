@@ -95,8 +95,9 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
             string body = await reader.ReadToEndAsync();
 
             string? action = ExtractSoapAction(body);
+            string? messageId = ExtractMessageId(body);
 
-            Console.WriteLine($"{context.Request.HttpMethod} {context.Request.Url?.PathAndQuery} → {action ?? "(no action)"}");
+            Console.WriteLine($"[{DateTimeOffset.Now:HH:mm:ss.fff}] {context.Request.HttpMethod} {context.Request.Url?.PathAndQuery} → {action ?? "(no action)"} (MessageID: {messageId ?? "(none)"})");
 
             string responseBody = action switch
             {
@@ -178,6 +179,21 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
             }
 
             return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? ExtractMessageId(string xml)
+    {
+        try
+        {
+            return XDocument.Parse(xml).Root
+                ?.Element(SoapNs + "Header")
+                ?.Element(WsaNs + "MessageID")
+                ?.Value;
         }
         catch
         {
