@@ -116,6 +116,7 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                 "http://www.onvif.org/ver10/media/wsdl/GetProfiles"                        => BuildGetProfilesResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetProfile"                         => BuildGetProfileResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurations"       => BuildGetVideoEncoderConfigurationsResponse(),
+                "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfiguration"        => BuildGetVideoEncoderConfigurationResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurationOptions" => BuildGetVideoEncoderConfigurationOptionsResponse(),
                 "http://www.onvif.org/ver10/media/wsdl/GetStreamUri"                       => BuildGetStreamUriResponse(),
                 _ => BuildFaultResponse($"Unsupported action: {action ?? "(none)"}"),
@@ -379,6 +380,41 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                     </tt:VideoEncoderConfiguration>
                   </trt:Profile>
                 </trt:GetProfileResponse>
+            """);
+
+    private string BuildGetVideoEncoderConfigurationResponse() =>
+        WrapSoapBody("""
+                <trt:GetVideoEncoderConfigurationResponse>
+                  <trt:Configuration token="vec_0">
+                    <tt:Name>H264 Encoder</tt:Name>
+                    <tt:UseCount>1</tt:UseCount>
+                    <tt:Encoding>H264</tt:Encoding>
+                    <tt:Resolution>
+                      <tt:Width>1920</tt:Width>
+                      <tt:Height>1080</tt:Height>
+                    </tt:Resolution>
+                    <tt:Quality>50</tt:Quality>
+                    <tt:RateControl>
+                      <tt:FrameRateLimit>30</tt:FrameRateLimit>
+                      <tt:EncodingInterval>1</tt:EncodingInterval>
+                      <tt:BitrateLimit>4096</tt:BitrateLimit>
+                    </tt:RateControl>
+                    <tt:H264>
+                      <tt:GovLength>30</tt:GovLength>
+                      <tt:H264Profile>Main</tt:H264Profile>
+                    </tt:H264>
+                    <tt:Multicast>
+                      <tt:Address>
+                        <tt:Type>IPv4</tt:Type>
+                        <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
+                      </tt:Address>
+                      <tt:Port>0</tt:Port>
+                      <tt:TTL>0</tt:TTL>
+                      <tt:AutoStart>false</tt:AutoStart>
+                    </tt:Multicast>
+                    <tt:SessionTimeout>PT60S</tt:SessionTimeout>
+                  </trt:Configuration>
+                </trt:GetVideoEncoderConfigurationResponse>
             """);
 
     private string BuildGetVideoEncoderConfigurationsResponse() =>
