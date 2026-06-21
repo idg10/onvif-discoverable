@@ -295,9 +295,9 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                 </tds:GetDeviceInformationResponse>
             """);
 
-    // The device advertises a single fixed MJPEG (JPEG-encoded) stream. The video source and
-    // video encoder configurations appear verbatim in several media responses (inside a profile,
-    // and standalone), so each is produced once here under a caller-supplied wrapper element.
+    // The device advertises a single fixed H.264 stream. The video source and video encoder
+    // configurations appear verbatim in several media responses (inside a profile, and
+    // standalone), so each is produced once here under a caller-supplied wrapper element.
     private static string VideoSourceConfiguration(string element, string token) => $"""
         <{element} token="{token}">
           <tt:Name>Video Source</tt:Name>
@@ -309,9 +309,9 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
 
     private static string VideoEncoderConfiguration(string element, string token) => $"""
         <{element} token="{token}">
-          <tt:Name>MJPEG Encoder</tt:Name>
+          <tt:Name>H264 Encoder</tt:Name>
           <tt:UseCount>1</tt:UseCount>
-          <tt:Encoding>JPEG</tt:Encoding>
+          <tt:Encoding>H264</tt:Encoding>
           <tt:Resolution>
             <tt:Width>1920</tt:Width>
             <tt:Height>1080</tt:Height>
@@ -322,6 +322,10 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
             <tt:EncodingInterval>1</tt:EncodingInterval>
             <tt:BitrateLimit>4096</tt:BitrateLimit>
           </tt:RateControl>
+          <tt:H264>
+            <tt:GovLength>30</tt:GovLength>
+            <tt:H264Profile>Main</tt:H264Profile>
+          </tt:H264>
           <tt:Multicast>
             <tt:Address>
               <tt:Type>IPv4</tt:Type>
@@ -384,11 +388,15 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                       <tt:Min>1</tt:Min>
                       <tt:Max>100</tt:Max>
                     </tt:QualityRange>
-                    <tt:JPEG>
+                    <tt:H264>
                       <tt:ResolutionsAvailable>
                         <tt:Width>1920</tt:Width>
                         <tt:Height>1080</tt:Height>
                       </tt:ResolutionsAvailable>
+                      <tt:GovLengthRange>
+                        <tt:Min>1</tt:Min>
+                        <tt:Max>300</tt:Max>
+                      </tt:GovLengthRange>
                       <tt:FrameRateRange>
                         <tt:Min>1</tt:Min>
                         <tt:Max>30</tt:Max>
@@ -397,7 +405,8 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                         <tt:Min>1</tt:Min>
                         <tt:Max>1</tt:Max>
                       </tt:EncodingIntervalRange>
-                    </tt:JPEG>
+                      <tt:H264ProfilesSupported>Main</tt:H264ProfilesSupported>
+                    </tt:H264>
                   </trt:Options>
                 </trt:GetVideoEncoderConfigurationOptionsResponse>
             """);
