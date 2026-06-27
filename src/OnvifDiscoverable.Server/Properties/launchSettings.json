@@ -7,6 +7,10 @@
     "sp3red": {
       "commandName": "Project",
       "commandLineArgs": "http://192.168.1.137:48554/onvif/device_service rtsp://192.168.1.137:8554/webcam Sp3Red LifeCam"
+    },
+    "testsrc": {
+      "commandName": "Project",
+      "commandLineArgs": "http://192.168.1.137:48554/onvif/device_service rtsp://192.168.1.137:8554/test \"GStreamer Test\" Q255Std mjpeg"
     }
   }
 }

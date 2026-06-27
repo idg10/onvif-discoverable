@@ -37,8 +37,9 @@ onvif-discoverable/
 # Build
 dotnet build src/
 
-# Run (xaddrs-url and rtsp-url are HTTP/RTSP endpoints; name and hardware are advertised in ProbeMatch responses)
-dotnet run --project src/OnvifDiscoverable.Server/ -- http://192.168.1.10:8080/onvif/device_service rtsp://192.168.1.10:8554/stream "My Camera" "Acme Model X"
+# Run (xaddrs-url and rtsp-url are HTTP/RTSP endpoints; name and hardware are advertised in
+# ProbeMatch responses; optional codec is h264 (default) or mjpeg and must match the RTSP stream)
+dotnet run --project src/OnvifDiscoverable.Server/ -- http://192.168.1.10:8080/onvif/device_service rtsp://192.168.1.10:8554/stream "My Camera" "Acme Model X" h264
 
 # Publish as native AOT executable
 dotnet publish -c Release -p:PublishAot=true src/OnvifDiscoverable.Server/
@@ -50,7 +51,7 @@ There are no tests at this time.
 
 **`Program.cs`** — arg parsing, constructs `OnvifDeviceDescription`, runs `WsDiscoveryListener` and `OnvifHttpListener` concurrently via `Task.WhenAll`. Ctrl+C is wired to a `CancellationTokenSource` shared by both listeners.
 
-**`OnvifDeviceDescription`** — record holding the device attributes: `XAddrs` (ONVIF device service URL), `RtspStreamUri` (returned by `GetStreamUri`), `EndpointAddress`, `Name`, `Hardware`, `Types`, `Scopes`.
+**`OnvifDeviceDescription`** — record holding the device attributes: `XAddrs` (ONVIF device service URL), `RtspStreamUri` (returned by `GetStreamUri`), `EndpointAddress`, `Name`, `Hardware`, `Codec` (`VideoCodec.H264`/`Mjpeg`), `Types`, `Scopes`. The advertised `Codec` must match what the RTSP stream actually carries.
 
 **`WsDiscoveryListener`** — joins the WS-Discovery multicast group, receives UDP datagrams, validates Probe requests, and sends ProbeMatch responses.
 

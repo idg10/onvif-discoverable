@@ -295,9 +295,10 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                 </tds:GetDeviceInformationResponse>
             """);
 
-    // The device advertises a single fixed H.264 stream. The video source and video encoder
-    // configurations appear verbatim in several media responses (inside a profile, and
-    // standalone), so each is produced once here under a caller-supplied wrapper element.
+    // The video source and video encoder configurations appear verbatim in several media
+    // responses (inside a profile, and standalone), so each is produced once here under a
+    // caller-supplied wrapper element. The video source is codec-independent; the encoder
+    // configuration varies with the advertised codec.
     private static string VideoSourceConfiguration(string element, string token) => $"""
         <{element} token="{token}">
           <tt:Name>Video Source</tt:Name>
@@ -307,37 +308,45 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
         </{element}>
         """;
 
-    private static string VideoEncoderConfiguration(string element, string token) => $"""
-        <{element} token="{token}">
-          <tt:Name>H264 Encoder</tt:Name>
-          <tt:UseCount>1</tt:UseCount>
-          <tt:Encoding>H264</tt:Encoding>
-          <tt:Resolution>
-            <tt:Width>1920</tt:Width>
-            <tt:Height>1080</tt:Height>
-          </tt:Resolution>
-          <tt:Quality>50</tt:Quality>
-          <tt:RateControl>
-            <tt:FrameRateLimit>30</tt:FrameRateLimit>
-            <tt:EncodingInterval>1</tt:EncodingInterval>
-            <tt:BitrateLimit>4096</tt:BitrateLimit>
-          </tt:RateControl>
-          <tt:H264>
-            <tt:GovLength>30</tt:GovLength>
-            <tt:H264Profile>Main</tt:H264Profile>
-          </tt:H264>
-          <tt:Multicast>
-            <tt:Address>
-              <tt:Type>IPv4</tt:Type>
-              <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
-            </tt:Address>
-            <tt:Port>0</tt:Port>
-            <tt:TTL>0</tt:TTL>
-            <tt:AutoStart>false</tt:AutoStart>
-          </tt:Multicast>
-          <tt:SessionTimeout>PT60S</tt:SessionTimeout>
-        </{element}>
-        """;
+    private string VideoEncoderConfiguration(string element, string token)
+    {
+        bool h264 = device.Codec == VideoCodec.H264;
+        string name = h264 ? "H264 Encoder" : "MJPEG Encoder";
+        string encoding = h264 ? "H264" : "JPEG";
+        // The codec-specific element sits between RateControl and Multicast in the schema
+        // sequence (tt:VideoEncoderConfiguration); JPEG has no such element.
+        string codecConfig = h264
+            ? "<tt:H264><tt:GovLength>30</tt:GovLength><tt:H264Profile>Main</tt:H264Profile></tt:H264>"
+            : "";
+        return $"""
+            <{element} token="{token}">
+              <tt:Name>{name}</tt:Name>
+              <tt:UseCount>1</tt:UseCount>
+              <tt:Encoding>{encoding}</tt:Encoding>
+              <tt:Resolution>
+                <tt:Width>1920</tt:Width>
+                <tt:Height>1080</tt:Height>
+              </tt:Resolution>
+              <tt:Quality>50</tt:Quality>
+              <tt:RateControl>
+                <tt:FrameRateLimit>30</tt:FrameRateLimit>
+                <tt:EncodingInterval>1</tt:EncodingInterval>
+                <tt:BitrateLimit>4096</tt:BitrateLimit>
+              </tt:RateControl>
+              {codecConfig}
+              <tt:Multicast>
+                <tt:Address>
+                  <tt:Type>IPv4</tt:Type>
+                  <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
+                </tt:Address>
+                <tt:Port>0</tt:Port>
+                <tt:TTL>0</tt:TTL>
+                <tt:AutoStart>false</tt:AutoStart>
+              </tt:Multicast>
+              <tt:SessionTimeout>PT60S</tt:SessionTimeout>
+            </{element}>
+            """;
+    }
 
     private string BuildGetProfilesResponse() =>
         WrapSoapBody($"""
@@ -380,36 +389,58 @@ class OnvifHttpListener(OnvifDeviceDescription device, CancellationTokenSource c
                 </trt:GetVideoEncoderConfigurationsResponse>
             """);
 
-    private string BuildGetVideoEncoderConfigurationOptionsResponse() =>
-        WrapSoapBody("""
+    private string BuildGetVideoEncoderConfigurationOptionsResponse()
+    {
+        string codecOptions = device.Codec == VideoCodec.H264
+            ? """
+                  <tt:H264>
+                        <tt:ResolutionsAvailable>
+                          <tt:Width>1920</tt:Width>
+                          <tt:Height>1080</tt:Height>
+                        </tt:ResolutionsAvailable>
+                        <tt:GovLengthRange>
+                          <tt:Min>1</tt:Min>
+                          <tt:Max>300</tt:Max>
+                        </tt:GovLengthRange>
+                        <tt:FrameRateRange>
+                          <tt:Min>1</tt:Min>
+                          <tt:Max>30</tt:Max>
+                        </tt:FrameRateRange>
+                        <tt:EncodingIntervalRange>
+                          <tt:Min>1</tt:Min>
+                          <tt:Max>1</tt:Max>
+                        </tt:EncodingIntervalRange>
+                        <tt:H264ProfilesSupported>Main</tt:H264ProfilesSupported>
+                      </tt:H264>
+                  """
+            : """
+                  <tt:JPEG>
+                        <tt:ResolutionsAvailable>
+                          <tt:Width>1920</tt:Width>
+                          <tt:Height>1080</tt:Height>
+                        </tt:ResolutionsAvailable>
+                        <tt:FrameRateRange>
+                          <tt:Min>1</tt:Min>
+                          <tt:Max>30</tt:Max>
+                        </tt:FrameRateRange>
+                        <tt:EncodingIntervalRange>
+                          <tt:Min>1</tt:Min>
+                          <tt:Max>1</tt:Max>
+                        </tt:EncodingIntervalRange>
+                      </tt:JPEG>
+                  """;
+        return WrapSoapBody($"""
                 <trt:GetVideoEncoderConfigurationOptionsResponse>
                   <trt:Options>
                     <tt:QualityRange>
                       <tt:Min>1</tt:Min>
                       <tt:Max>100</tt:Max>
                     </tt:QualityRange>
-                    <tt:H264>
-                      <tt:ResolutionsAvailable>
-                        <tt:Width>1920</tt:Width>
-                        <tt:Height>1080</tt:Height>
-                      </tt:ResolutionsAvailable>
-                      <tt:GovLengthRange>
-                        <tt:Min>1</tt:Min>
-                        <tt:Max>300</tt:Max>
-                      </tt:GovLengthRange>
-                      <tt:FrameRateRange>
-                        <tt:Min>1</tt:Min>
-                        <tt:Max>30</tt:Max>
-                      </tt:FrameRateRange>
-                      <tt:EncodingIntervalRange>
-                        <tt:Min>1</tt:Min>
-                        <tt:Max>1</tt:Max>
-                      </tt:EncodingIntervalRange>
-                      <tt:H264ProfilesSupported>Main</tt:H264ProfilesSupported>
-                    </tt:H264>
+                    {codecOptions}
                   </trt:Options>
                 </trt:GetVideoEncoderConfigurationOptionsResponse>
             """);
+    }
 
     private string BuildGetStreamUriResponse() =>
         WrapSoapBody($"""

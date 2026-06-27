@@ -11,6 +11,12 @@ record OnvifDeviceDescription
     public required string EndpointAddress { get; init; }
 
     /// <summary>
+    /// The video codec advertised in the media service responses. Must match what the RTSP
+    /// stream actually carries (see <see cref="VideoCodec"/>).
+    /// </summary>
+    public VideoCodec Codec { get; init; } = VideoCodec.H264;
+
+    /// <summary>
     /// Human-readable name of the device, used to populate the mandatory
     /// <c>onvif://www.onvif.org/name/…</c> scope (Core §7.3.2.2).
     /// </summary>
