@@ -2,7 +2,9 @@
 
 ## Project Overview
 
-`onvif-discoverable` is a .NET 10 console application that implements a **WS-Discovery responder** for ONVIF devices. It listens on the WS-Discovery multicast address (`239.255.255.250:3702`) and responds to Probe requests by advertising a simulated `NetworkVideoTransmitter` device — making the process discoverable to ONVIF camera clients.
+`onvif-discoverable` is a .NET 10 console application that implements a **WS-Discovery responder** for ONVIF devices. It listens on the WS-Discovery multicast address (`239.255.255.250:3702`) and responds to Probe requests by advertising a simulated `NetworkVideoTransmitter` device — making the process discoverable to ONVIF camera clients. It also serves the ONVIF device/media SOAP services, so a client (notably Windows) can interrogate the device and obtain an RTSP stream URL.
+
+This repo is only **one component** of an end-to-end "make a webcam appear as a network camera in Windows" pipeline. **`docs/streaming-pipeline.md` is the most important document in the repo** — it records the full working pipeline (camera → GStreamer → MediaMTX → Windows), how to run it, and the many hard-won, non-obvious lessons (Windows's strict WWSAPI parser, the MJPEG quantization-table problem, RTSP transport tuning, etc.). **Read it before doing streaming/Windows-interop work** to avoid rediscovering all of it. The two checklists (`docs/probe-match-checklist.md`, `docs/device-service-checklist.md`) cover per-operation conformance detail.
 
 ## Tech Stack
 
@@ -17,6 +19,10 @@
 onvif-discoverable/
 ├── CLAUDE.md
 ├── LICENSE
+├── docs/
+│   ├── streaming-pipeline.md                       # ⭐ End-to-end pipeline + hard-won lessons
+│   ├── probe-match-checklist.md                    # WS-Discovery ProbeMatch conformance
+│   └── device-service-checklist.md                 # ONVIF device/media SOAP conformance
 ├── src/
 │   ├── OnvifDiscoverable.slnx                      # Solution file (modern .slnx format)
 │   └── OnvifDiscoverable.Server/
